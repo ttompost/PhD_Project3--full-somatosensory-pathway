@@ -1,10 +1,9 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""
-Created on Wed May 29 11:48:21 2024
-
-@author: teatompos
-"""
+'''
+A HEALTY MODEL OF ONE THALAMIC/VPM NEURON; stimulated with multiple injected currents and 
+used for comparison between the same cell modelled in dynasim/Matlab
+'''
 
 from brian2 import *
 import numpy as np
