@@ -13,6 +13,9 @@ import numpy as np
 from scipy import constants as constants
 import matplotlib.pyplot as plt
 
+# System parameters
+defaultclock.dt = 0.01*ms
+
 ########### Constants for VPM cells ###########
 ENa_vpm = 50*mV 
 EK_vpm = -100*mV 
@@ -112,8 +115,7 @@ VPM = '''
         '''
 
 CTX = '''
-        dv/dt = 1/Cm * (IK + INa + IM + Ileak + Iext + Igaba + Iampa)  : volt
-        Iext : ampere/meter**2
+        dv/dt = 1/Cm * (IK + INa + IM + Ileak + Igaba + Iampa + Inoise)  : volt
         
         gaba2 : 1
         ampa2 : 1
@@ -156,31 +158,37 @@ CTX = '''
         IM    = -gM *p *(v-EM_ctx)  : ampere/meter**2
         Ileak = -gleak*(v-Eleak): ampere/meter**2
         
-        dgaba1/dt = -gaba1/taud_g + 1/2 * (1 + (tanh_g(v/slope_g)))* (1-gaba1)/taur_g : 1 
-        dampa1/dt = -ampa1/taud_a + 1/2 * (1 + (tanh_a(v/slope_a)))* (1-ampa1)/taur_a : 1 
+        dgaba1/dt = -gaba1/taud_g + 1/2 * (1 + (tanh(v/slope_g)))* (1-gaba1)/taur_g : 1 
+        dampa1/dt = -ampa1/taud_a + 1/2 * (1 + (tanh(v/slope_a)))* (1-ampa1)/taur_a : 1 
 
         Igaba = -gsyn_g * gaba2 * (v-Esyn_g): amp/meter**2
         Iampa = -gsyn_a * ampa2 * (v-Esyn_a): amp/meter**2
+        
+        noise_std = 5 * mA/meter**2 : amp/meter**2
+        noise_mean = 0 * nA/meter**2 : amp/meter**2
+        random_var : 1
+        Inoise = noise_mean + noise_std * random_var: amp/meter**2
 '''
-
+        
 ########### Populations ###########
 spike_detect = 0*mV
-VPM_neuron_num = 80;
+VPM_neuron_num = 40;
 L4E_neuron_num = 188;
 L4I_neuron_num = 33;
 
 # Create VPM population
 TC_cells = NeuronGroup(VPM_neuron_num, VPM, threshold = 'v > spike_detect', refractory = 'v > spike_detect', method='rk4')
-TC_cells.v = -65*mV  # Resting potential
+TC_cells.v = -65*mV + (10 * np.random.rand(1, VPM_neuron_num) * mV) # Resting potential
 
-TC_cells.m = 0.05 + 0.1 * np.random.rand(1, VPM_neuron_num)
-TC_cells.h = 0.54 + 0.1 * np.random.rand(1, VPM_neuron_num)
-TC_cells.n = 0.1 * np.random.rand(1, VPM_neuron_num)
-TC_cells.hT = 0.34 + 0.1 * np.random.rand(1, VPM_neuron_num)
-TC_cells.CaBuffer = 0.0001 * np.random.rand(1, VPM_neuron_num)
-TC_cells.o1 = 0 * np.random.rand(1, VPM_neuron_num)
-TC_cells.c1 = 0.5 * np.random.rand(1, VPM_neuron_num)
-TC_cells.p0 = 0.5 * np.random.rand(1, VPM_neuron_num)
+# TC_cells.m = 0.05 + 0.1 * np.random.rand(1, VPM_neuron_num)
+# TC_cells.h = 0.54 + 0.1 * np.random.rand(1, VPM_neuron_num)
+# TC_cells.n = 0.1 * np.random.rand(1, VPM_neuron_num)
+# TC_cells.hT = 0.34 + 0.1 * np.random.rand(1, VPM_neuron_num)
+TC_cells.CaBuffer = np.finfo(float).eps
+# TC_cells.CaBuffer = 0.0001 * np.random.rand(1, VPM_neuron_num)
+# TC_cells.o1 = 0 * np.random.rand(1, VPM_neuron_num)
+# TC_cells.c1 = 0.5 * np.random.rand(1, VPM_neuron_num)
+# TC_cells.p0 = 0.5 * np.random.rand(1, VPM_neuron_num)
 
 # Create L4E population
 L4E_cells = NeuronGroup(L4E_neuron_num, CTX, threshold = 'v > spike_detect', refractory = 'v > spike_detect', method = 'rk4')
@@ -209,26 +217,26 @@ L4I_cells.v        =   [-65] * mV
 ########### Connections ###########
 # AMPA params
 Esyn_AMPA = 0       * mV  
-gsyn_AMPA = 0.1 * 1/6    * msiemens/cm**2
+gsyn_AMPA = 0.1 * 0.17    * msiemens/cm**2
 slope_AMPA = 10     * mvolt
 taud_AMPA = 2       * ms
 taur_AMPA = 0.1     * ms
 
 # GABA params
 Esyn_GABA = -90         * mV 
-gsyn_GABA = 0.25 * 3/2   * msiemens/cm**2 
+gsyn_GABA = 0.25 * 0.5   * msiemens/cm**2 
 taud_GABA = 10      * ms
 taur_GABA = 0.2     * ms
 slope_GABA = 10     * mvolt
 
 # Define dynamics
-VPM_to_L4E = Synapses(TC_cells, L4E_cells, 'ampa2_post = 7 * s1_pre : 1 (summed)')
-VPM_to_L4I = Synapses(TC_cells, L4I_cells, 'ampa2_post = 9 * s1_pre : 1 (summed)')
+VPM_to_L4E = Synapses(TC_cells, L4E_cells, on_pre = 'ampa2_post = 7 * s1_pre')
+VPM_to_L4I = Synapses(TC_cells, L4I_cells, on_pre = 'ampa2_post = 9 * s1_pre')
 
-L4E_to_L4E = Synapses(L4E_cells, L4E_cells, 'ampa2_post = 3.3 * ampa1_pre : 1 (summed)')
-L4E_to_L4I = Synapses(L4E_cells, L4I_cells, 'ampa2_post = 7.9 * ampa1_pre : 1 (summed)')
-L4I_to_L4E = Synapses(L4I_cells, L4E_cells, 'gaba2_post = 16 * gaba1_pre : 1 (summed)')
-L4I_to_L4I = Synapses(L4I_cells, L4I_cells, 'gaba2_post = 14 * gaba1_pre : 1 (summed)')
+L4E_to_L4E = Synapses(L4E_cells, L4E_cells, on_pre = 'ampa2_post = 3.3 * ampa1_pre')
+L4E_to_L4I = Synapses(L4E_cells, L4I_cells, on_pre = 'ampa2_post = 7.9 * ampa1_pre')
+L4I_to_L4E = Synapses(L4I_cells, L4E_cells, on_pre = 'gaba2_post = 16 * gaba1_pre')
+L4I_to_L4I = Synapses(L4I_cells, L4I_cells, on_pre = 'gaba2_post = 14 * gaba1_pre')
 
 # Create connections
 VPM_to_L4E.connect(p=0.043)
@@ -270,3 +278,46 @@ L4I_cells.gsyn_a     = [gsyn_AMPA]
 L4I_cells.Esyn_a     = [Esyn_AMPA]
 L4I_cells.ampa2       = [0]
 
+########### Input ###########
+I_amp = 4
+
+# Stimulation parameters
+start_time = 200
+end_time = 500
+stim_ms = 50
+ 
+@network_operation(dt=1*ms)
+def update_I():
+    TC_cells.Iapp[:VPM_neuron_num] = Istim(defaultclock.t)
+    L4E_cells.random_var[:L4E_neuron_num] = np.random.normal(0, 1, L4E_neuron_num)
+    L4I_cells.random_var[:L4I_neuron_num] = np.random.normal(0, 1, L4I_neuron_num)
+   
+# Create a time array for the current input
+times = np.concatenate([np.zeros(start_time), np.ones(stim_ms), np.zeros(end_time - start_time - stim_ms)])
+
+# Create the TimedArray
+Istim = TimedArray(times * (I_amp * uA/cm**2), dt=1*ms)
+
+########### Simulation ###########
+
+# Set up monitors and run the simulation
+VPM_activity = StateMonitor(TC_cells, variables=['v'], record=True)
+L4E_activity = StateMonitor(L4E_cells, variables=['v'], record=True)
+L4I_activity = StateMonitor(L4I_cells, variables=['v', 'Inoise'], record=True)
+
+run(end_time*ms)
+
+########### Figures ###########
+figure(figsize=(10, 6))
+for neuron in range(33):
+    subplot(311)
+    plot(VPM_activity.t/ms, VPM_activity.v[neuron]/mV)
+    
+    subplot(312)
+    plot(L4E_activity.t/ms, L4E_activity.v[neuron]/mV)
+    
+    subplot(313)
+    plot(L4I_activity.t/ms, L4I_activity.v[neuron]/mV)
+    
+figure(figsize=(10, 6))
+plot(L4I_activity.t/ms, L4I_activity.Inoise[1]/mV)
