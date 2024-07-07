@@ -69,3 +69,33 @@ plt.subplot(212)
 plt.plot(TimeVector, EPSPsignals[0])
 plt.show()
 
+
+#### digested code
+
+# tau_i, tau_1, tau_d, tau_r  = 10, 1, 2, 0.5
+# eps = np.finfo(float).eps
+# t = np.asarray(TimeVector) # in ms
+# I_amp =  180 * nA/cm**2
+
+# psp = tau_i * (np.exp(-np.maximum(t - tau_1, 0) / tau_d) - np.exp(-np.maximum(t - tau_1, 0) / tau_r)) / (tau_d - tau_r)
+# psp = psp[psp > eps]
+# psp = np.concatenate([np.zeros(len(psp)), psp])
+# psp = psp / np.max(psp) # normalize psp for easier input control
+
+# EPSPsignals = [None] * len(BrainstemNeurons)
+# NeuronSignals = [None] * len(BrainstemNeurons)
+# SpikeTimes = [None] * len(BrainstemNeurons)
+# for neuronID in BrainstemNeurons: 
+#     indices = np.array(NeuronID_Dir90[NeuronID_Dir90["NeuronID"] == neuronID].index.tolist())
+
+#     signal = [0] * len(TimeVector)
+#     spkTimes = []
+#     for spkIdx in indices:
+#         spikeTime = Spikes_Dir90["Spike_times"][spkIdx]
+#         spkTimes.append(spikeTime*1000)
+        
+#         signal[int(spikeTime*1000)] = 1
+        
+#     SpikeTimes[neuronID] = np.array(spkTimes) # ms
+#     NeuronSignals[neuronID] = np.array(signal)
+#     EPSPsignals[neuronID] = np.array(np.convolve(NeuronSignals[neuronID], psp, mode='same'))
