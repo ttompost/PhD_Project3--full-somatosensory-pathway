@@ -20,8 +20,7 @@ Spikes_Dir90 = pd.read_csv("/Users/teatompos/Documents/GitHub/PhD_Project3--full
 Spikes_Dir90.columns = ["Spike_times"]
 
 BrainstemNeurons = 70
-SimulationDuration = 400                        # ms
-TimeVector = np.arange(0,SimulationDuration,1)  # ms
+SimulationDuration = 400   # ms
 
 # make VPM
 ENa_vpm = 50*mV 
@@ -106,20 +105,29 @@ GeneratedSpikes = SpikeGeneratorGroup(BrainstemNeurons,  # number of spiking sou
       times=np.array(Spikes_Dir90["Spike_times"]*1000)*ms) # spike times for each neuron
 
 VPMinput = Synapses(GeneratedSpikes, TC_cells, on_pre='v += 1.5*mV')
-VPMinput.connect(p=0.3)
+VPMinput.connect(p=0.35)
 
 # simulate
 VPM_activity = StateMonitor(TC_cells, variables=['v'], record=True)
+VPM_spikes = SpikeMonitor(TC_cells)
+
 run(SimulationDuration*ms)
 
 # plot
-fig, axs = plt.subplots(2, 1)
+figure(figsize=(10, 6))
+subplot(211)
 for i in range(VPM_neuron_num):    
-    axs[0].plot(VPM_activity.t/ms, VPM_activity.v[i]/mV)
-    axs[0].set_title('Spiking neuron')
-    axs[0].set_xlabel('Time (ms)')
-    axs[0].set_ylabel('Voltage (mV)')
-      
-plt.tight_layout()
+    plot(VPM_activity.t/ms, VPM_activity.v[i]/mV)
+    
+title('Spiking neuron')
+ylabel('Voltage (mV)')
+xlim([0, SimulationDuration])
+    
+subplot(212)
+plt.plot(VPM_spikes.t/ms, VPM_spikes.i, '.k')
+plt.xlabel('Time (ms)')
+plt.ylabel('Neuron Index')
+plt.title('Raster Plot')
+plt.xlim([0, SimulationDuration])
 plt.show()
 
