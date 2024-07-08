@@ -40,6 +40,10 @@ gKleak_vpm = 0.0172*msiemens/cm**2
 FaradConst = constants.physical_constants['Faraday constant'][0] * coulomb/mole
 GasConst = constants.gas_constant * joule / (kelvin * mole)
 
+slope_AMPA = 10     * mvolt
+taud_AMPA = 2       * ms
+taur_AMPA = 0.1     * ms
+
 VPM = '''
          dv/dt = (Iapp - INa - IK - IT - Ih - ILeak - IKleak)/Cm : volt
          
@@ -83,6 +87,12 @@ VPM = '''
            
          Cm = 1*uF/cm**2 : farad/meter**2
          Iapp : amp/meter**2
+         
+         taud : second
+         taur : second
+         slope : volt
+         
+         ds1/dt = -s1/taud + 1/2 * (1 + (tanh(v/slope)))* (1-s1)/taur : 1 
         '''
         
 spike_detect = 0*mV
@@ -99,6 +109,10 @@ TC_cells.o1 = np.finfo(float).eps * np.random.rand(1, VPM_neuron_num)
 TC_cells.c1 = np.finfo(float).eps * np.random.rand(1, VPM_neuron_num)
 TC_cells.p0 = np.finfo(float).eps * np.random.rand(1, VPM_neuron_num)
 TC_cells.CaBuffer = np.finfo(float).eps * np.random.rand(1, VPM_neuron_num)
+
+TC_cells.taud     = [taud_AMPA]
+TC_cells.taur     = [taur_AMPA]
+TC_cells.slope    = [slope_AMPA]
 
 GeneratedSpikes = SpikeGeneratorGroup(BrainstemNeurons,  # number of spiking sources
       indices=np.array(NeuronID_Dir90["NeuronID"]), # which neurons will make each spike
