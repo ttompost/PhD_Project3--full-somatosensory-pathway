@@ -46,9 +46,6 @@ RS_gM        = 15e-5        * siemens/cm**2
 RS_tau_max_M = 808          * ms
 
 # Fast-spiking param-values
-FS_diam      = 56.9        * um
-FS_surface   = pi*FS_diam**2
-
 FS_gleak     = 3.8e-5       * siemens/cm**2
 FS_Eleak     = -70.4        * mV
 FS_gNa       = 0.078        * siemens/cm**2

@@ -491,5 +491,5 @@ for neuron in range(15):
     subplot(428)
     plot(L2I_activity.t/ms, L2I_activity.v[neuron]/mV)
     
-figure(figsize=(10, 6))
-plot(L4I_activity.t/ms, L4I_activity.Inoise[1]/mV)
+# figure(figsize=(10, 6))
+# plot(L4I_activity.t/ms, L4I_activity.Inoise[1]/mV)
